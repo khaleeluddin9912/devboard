@@ -16,14 +16,5 @@ RUN npm run build
 # -------------- STAGE 1 COMPLETE ------------
 
 # Stage 2 (Runner Stage) - Used to run the application from the builder stage
-FROM node:24-alpine AS runner
-
-WORKDIR /app
-
-COPY package.json .
-
-RUN npm install -g vite
-
-COPY --from=builder /app/dist ./dist
-
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
+FROM dhi.io/node:24-alpine AS runner
+EXPOSE 8080
