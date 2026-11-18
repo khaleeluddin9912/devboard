@@ -16,14 +16,6 @@ RUN npm run build
 # -------------- STAGE 1 COMPLETE ------------
 
 # Stage 2 (Runner Stage) - Used to run the application from the builder stage
-FROM node:24-alpine AS runner
+FROM dhi.io/nginx:1.29-debian13 AS runner
 
-WORKDIR /app
-
-COPY package.json .
-
-RUN npm install -g vite
-
-COPY --from=builder /app/dist ./dist
-
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
+COPY --from=builder /app/dist /usr/share/nginx/html
