@@ -10,7 +10,7 @@ WORKDIR /app
 
 # npm ci installs exact versions from package-lock.json.
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copy the rest of the source and build the production bundle into /dist.
 COPY . .
