@@ -1,37 +1,28 @@
-FROM dhi.io/node:26-dev AS build
+# DevBoard - Fundamentals (UI only)
+FROM node:20-alpine
 
+# Create a dedicated non-root user.
+# Running as root inside a container is a security risk.
+RUN addgroup -S app && adduser -S -G app app
+
+# All app files live under /app.
 WORKDIR /app
 
+# npm ci installs exact versions from package-lock.json.
 COPY package*.json ./
+RUN npm install
 
-RUN npm install --legacy-peer-deps
-
-RUN npm list vite > /dev/null 2>&1 || npm install --no-save vite@5.4.11
-
+# Copy the rest of the source and build the production bundle into /dist.
 COPY . .
-
-# Browser tracing is baked in at build time (Vite replaces import.meta.env).
-# Off by default so a plain `docker build` or compose run stays untraced.
-ARG VITE_OTEL_ENABLED=false
-ARG VITE_OTEL_ENVIRONMENT=dev
-ARG VITE_APP_VERSION=dev
-ENV VITE_OTEL_ENABLED=$VITE_OTEL_ENABLED \
-    VITE_OTEL_ENVIRONMENT=$VITE_OTEL_ENVIRONMENT \
-    VITE_APP_VERSION=$VITE_APP_VERSION
-
 RUN npm run build
 
-FROM dhi.io/node:26
+# Give the non-root user ownership of the app, then switch to it.
+RUN chown -R app:app /app
+USER app
 
-WORKDIR /app
-
-COPY --from=build /app/dist ./dist
-
-COPY --from=build /app/node_modules ./node_modules
-
-COPY vite.preview.config.js ./vite.config.js
-
+# The preview server listens on this port.
 EXPOSE 4173
 
-ENTRYPOINT ["node", "--no-warnings"]
-CMD ["./node_modules/.bin/vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
+# Bind to 0.0.0.0 so the server is reachable from outside the container.
+# The default 127.0.0.1 would only accept connections from inside it.
+CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "4173"]
